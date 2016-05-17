@@ -50,16 +50,14 @@ echo "Your cesm root is ${ciesmroot}"
 
 set casedir="${ciesmroot}/CIESM.RUN"
 set archdir="${ciesmroot}/CIESM.ARCHIVE"
-if !(-d ${casedir}) 
-then 
+if !(-d ${casedir}) then 
 	mkdir -p ${casedir} 
 	touch .gitignore
-fi
-if !(-d ${archdir}) 
-then
+endif
+if !(-d ${archdir}) then 
 	mkdir -p ${archdir}
 	touch .gitignore
-fi
+endif
 
 set case1="${casedir}/${casename}" #@@@@@PLEASE MODIFY CASE NAME!!!!@@@@@@
 
