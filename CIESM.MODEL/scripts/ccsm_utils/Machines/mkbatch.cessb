@@ -14,7 +14,7 @@ if ( $ntasks % ${MAX_TASKS_PER_NODE} > 0) then
   @ ntasks = $nodes * ${MAX_TASKS_PER_NODE}
 endif
 @ taskpernode = ${MAX_TASKS_PER_NODE} / ${maxthrds}
-set qname = hpca 
+set qname = hpcb 
 set tlimit = "0015:59:00"
 
 #--- Job name is first fifteen characters of case name ---

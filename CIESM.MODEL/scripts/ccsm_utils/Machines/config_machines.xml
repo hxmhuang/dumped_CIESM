@@ -497,10 +497,10 @@
 	<OS>LINUX</OS>
 	<COMPILERS>intel</COMPILERS>
 	<MPILIBS>impi</MPILIBS>
-<RUNDIR>/home/hxm/WORK3/ciesm-work/ciesm.run/$CASE/run</RUNDIR><!-- complete path to the run directory -->
-<EXEROOT>/home/hxm/WORK3/ciesm-work/ciesm.run/$CASE/bld</EXEROOT> <!-- complete path to the build directory -->
+<RUNDIR>/home/hxm/WORK3/CIESM/CIESM.RUN/$CASE/run</RUNDIR><!-- complete path to the run directory -->
+<EXEROOT>/home/hxm/WORK3/CIESM/CIESM.RUN/$CASE/bld</EXEROOT> <!-- complete path to the build directory -->
 	<DIN_LOC_ROOT>/home/share/cesm/cesm-input</DIN_LOC_ROOT>
-<DOUT_S_ROOT>/home/hxm/WORK3/ciesm-work/ciesm.archive/$CASE</DOUT_S_ROOT><!-- complete path to a short term archiving directory -->
+<DOUT_S_ROOT>/home/hxm/WORK3/CIESM/CIESM.ARCHIVE/$CASE</DOUT_S_ROOT><!-- complete path to a short term archiving directory -->
 	<BATCHQUERY>qstat -f</BATCHQUERY>
 	<BATCHSUBMIT>qsub &lt;</BATCHSUBMIT>
 	<SUPPORTED_BY>hxm-at- tsinghua.edu.cn</SUPPORTED_BY>
@@ -509,6 +509,39 @@
 	<PES_PER_NODE>20</PES_PER_NODE>
 </machine>
 
+<machine MACH="cessa">
+	<DESC>SuperMicro, os is Linux, 20 pes/node, batch system is PBS</DESC>
+	<OS>LINUX</OS>
+	<COMPILERS>intel</COMPILERS>
+	<MPILIBS>impi</MPILIBS>
+<RUNDIR>/home/hxm/WORK3/CIESM/CIESM.RUN/$CASE/run</RUNDIR><!-- complete path to the run directory -->
+<EXEROOT>/home/hxm/WORK3/CIESM/CIESM.RUN/$CASE/bld</EXEROOT> <!-- complete path to the build directory -->
+	<DIN_LOC_ROOT>/home/share/cesm/cesm-input</DIN_LOC_ROOT>
+<DOUT_S_ROOT>/home/hxm/WORK3/CIESM/CIESM.ARCHIVE/$CASE</DOUT_S_ROOT><!-- complete path to a short term archiving directory -->
+	<BATCHQUERY>qstat -f</BATCHQUERY>
+	<BATCHSUBMIT>qsub &lt;</BATCHSUBMIT>
+	<SUPPORTED_BY>hxm-at- tsinghua.edu.cn</SUPPORTED_BY>
+	<GMAKE_J>20</GMAKE_J> 
+	<MAX_TASKS_PER_NODE>20</MAX_TASKS_PER_NODE>
+	<PES_PER_NODE>20</PES_PER_NODE>
+</machine>
+
+<machine MACH="cessb">
+	<DESC>SuperMicro, os is Linux, 20 pes/node, batch system is PBS</DESC>
+	<OS>LINUX</OS>
+	<COMPILERS>intel</COMPILERS>
+	<MPILIBS>impi</MPILIBS>
+<RUNDIR>/home/hxm/WORK3/CIESM/CIESM.RUN/$CASE/run</RUNDIR><!-- complete path to the run directory -->
+<EXEROOT>/home/hxm/WORK3/CIESM/CIESM.RUN/$CASE/bld</EXEROOT> <!-- complete path to the build directory -->
+	<DIN_LOC_ROOT>/home/share/cesm/cesm-input</DIN_LOC_ROOT>
+<DOUT_S_ROOT>/home/hxm/WORK3/CIESM/CIESM.ARCHIVE/$CASE</DOUT_S_ROOT><!-- complete path to a short term archiving directory -->
+	<BATCHQUERY>qstat -f</BATCHQUERY>
+	<BATCHSUBMIT>qsub &lt;</BATCHSUBMIT>
+	<SUPPORTED_BY>hxm-at- tsinghua.edu.cn</SUPPORTED_BY>
+	<GMAKE_J>28</GMAKE_J> 
+	<MAX_TASKS_PER_NODE>28</MAX_TASKS_PER_NODE>
+	<PES_PER_NODE>28</PES_PER_NODE>
+</machine>
 
 
 </config_machines>

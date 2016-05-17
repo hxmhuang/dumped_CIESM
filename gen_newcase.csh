@@ -5,18 +5,21 @@
 #     stop_option, stop_n by yourself
 ###############################################
 
+
 ####   USER Define ##############################
 # resolution
-#set grid="ne30_g16_rx1"
-set grid="ne30_g16"
+set grid="ne30_g16_rx1"
+#set grid="ne30_g16"
 #set grid="f09_g16"
 # compset
 set compset="G"
 # experimental years
-set stop_option="nyears"
-set stop_n=1
+set stop_option="nmonths"
+set stop_n=2
 # process number
-set pp=280
+set pp=100
+# machine name
+set machine="cessb"
 
 #set iopp=`expr ${pp} / 8`
 set iopp=0
@@ -24,7 +27,7 @@ set totalpp=`expr ${pp} + ${iopp}`
 set node=`expr ${totalpp} / 20`
 
 # case name
-set casename="mycase_${compset}_${grid}_${totalpp}" #@@@@@PLEASE MODIFY CASE NAME!!!!@@@@@@
+set casename="mycase2_${compset}_${grid}_${totalpp}" #@@@@@PLEASE MODIFY CASE NAME!!!!@@@@@@
 
 #set SourceMods="SourceMods.B2000CAM5.fv"
 #set SourceMods="SourceMods.B2000CAM5.ne"
@@ -36,6 +39,8 @@ set casename="mycase_${compset}_${grid}_${totalpp}" #@@@@@PLEASE MODIFY CASE NAM
 set dout="TRUE"
 
 #######  USER DEFINE End ############################# 
+cd CIESM.MODEL
+
 set rootpwd=$cwd/scripts
 echo "Your script path is ${rootpwd}"
 
@@ -43,8 +48,8 @@ cd ..
 set ciesmroot=$cwd
 echo "Your cesm root is ${ciesmroot}"
 
-set casedir="${ciesmroot}/ciesm.run"
-set archdir="${ciesmroot}/ciesm.archive"
+set casedir="${ciesmroot}/CIESM.RUN"
+set archdir="${ciesmroot}/CIESM.ARCHIVE"
 if !(-d ${casedir}) mkdir -p ${casedir}
 if !(-d ${archdir}) mkdir -p ${archdir}
 
@@ -53,15 +58,24 @@ set case1="${casedir}/${casename}" #@@@@@PLEASE MODIFY CASE NAME!!!!@@@@@@
 # create the folder
 set RUNDIR="${casedir}/"'$'"CASE/run"
 set EXEROOT="${casedir}/"'$'"CASE/bld"
-set DOUT_S_ROOT="${ciesmroot}/ciesm.archive/"'$'"CASE"
+set DOUT_S_ROOT="${ciesmroot}/CIESM.ARCHIVE/"'$'"CASE"
 
 cd $rootpwd
 sed -i "500c <RUNDIR>${RUNDIR}</RUNDIR><!--- complete path to the run directory -->" ccsm_utils/Machines/config_machines.xml
 sed -i "501c <EXEROOT>${EXEROOT}</EXEROOT> <!--- complete path to the build directory -->" ccsm_utils/Machines/config_machines.xml
 sed -i "503c <DOUT_S_ROOT>${DOUT_S_ROOT}</DOUT_S_ROOT><!--- complete path to a short term archiving directory -->" ccsm_utils/Machines/config_machines.xml
 
+sed -i "517c <RUNDIR>${RUNDIR}</RUNDIR><!--- complete path to the run directory -->" ccsm_utils/Machines/config_machines.xml
+sed -i "518c <EXEROOT>${EXEROOT}</EXEROOT> <!--- complete path to the build directory -->" ccsm_utils/Machines/config_machines.xml
+sed -i "520c <DOUT_S_ROOT>${DOUT_S_ROOT}</DOUT_S_ROOT><!--- complete path to a short term archiving directory -->" ccsm_utils/Machines/config_machines.xml
+
+sed -i "534c <RUNDIR>${RUNDIR}</RUNDIR><!--- complete path to the run directory -->" ccsm_utils/Machines/config_machines.xml
+sed -i "535c <EXEROOT>${EXEROOT}</EXEROOT> <!--- complete path to the build directory -->" ccsm_utils/Machines/config_machines.xml
+sed -i "537c <DOUT_S_ROOT>${DOUT_S_ROOT}</DOUT_S_ROOT><!--- complete path to a short term archiving directory -->" ccsm_utils/Machines/config_machines.xml
+
+
 echo "You will create a case in $case1"
-./create_newcase -compset $compset -res $grid -mach cess -case $case1
+./create_newcase -compset $compset -res $grid -mach $machine -case $case1
 
 ########  MODIFY CONFIG FILES ######################
 cd $case1
