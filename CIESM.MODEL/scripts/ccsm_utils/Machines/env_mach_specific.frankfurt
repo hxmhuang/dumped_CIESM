@@ -1,0 +1,35 @@
+#! /bin/csh -f
+
+#===============================================================================
+# Frankfurt machine specific settings
+#===============================================================================
+
+if ( $COMPILER == "intel" ) then
+    setenv OMPI_INTEL_PATH /cluster/openmpi-qlc-intel
+    setenv INTEL        /usr/local/intel-cluster-2013.4.183
+    # Runtime environment variables
+    setenv PATH ${OMPI_INTEL_PATH}/bin:${INTEL}/bin:${PATH}
+    setenv LD_LIBRARY_PATH /usr/local/intel-cluster-2013.4.183/composer_xe_2013.4.183/compiler/lib/intel64:/cluster/openmpi-qlc-intel/lib64:/usr/local/netcdf-4.3.0-intel-cluster-2013.4.183/lib:/usr/mpi/intel/openmpi-1.4.3-qlc/lib64
+    setenv P4_GLOBMEMSIZE 500000000
+endif
+
+
+if ( $COMPILER == "pgi" ) then
+    setenv OMPI_PGI_PATH /cluster/openmpi-qlc-pgi
+    setenv PGI           /usr/local/pgi-pgcc-pghf-13.7
+    # Runtime environment variables
+    setenv PATH ${PGI}/linux86/bin:${OMPI_PGI_PATH}/bin:${PATH}
+    setenv LD_LIBRARY_PATH ${PGI}/linux86-64/lib:${PGI}/linux86-64/libso:/usr/local/netcdf-4.3.0-pgi-pgcc-pghf-13.7/lib:/usr/local/pgi-pg-pgcc-pghf-13.7/linux86-64/lib:/cluster/openmpi-qlc-pgi/lib64
+    setenv P4_GLOBMEMSIZE 500000000
+endif
+
+
+if ( $COMPILER == "nag" ) then
+    setenv MPICH_NAG_PATH /home/santos/mpich-gcc-nag
+    setenv NAG            /usr/local/nag-5.3.1-907
+    source $NAG/nag-tcsh.rc
+    # Runtime environment variables
+    setenv PATH ${NAG}/bin:${MPICH_NAG_PATH}/bin:${PATH}
+    setenv LD_LIBRARY_PATH ${MPICH_NAG_PATH}/lib:/usr/local/lib:/usr/local/netcdf-4.3.0-gcc-g++-4.4.7-3-nag-5.3.1-907/lib
+    setenv P4_GLOBMEMSIZE 500000000
+endif
