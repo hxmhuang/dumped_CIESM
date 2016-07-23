@@ -1,23 +1,24 @@
 #!/bin/csh -f 
-################################################
-# For POP users:
-#   Pls define grid, compset, pp, number, casename, SourceMods,
-#     stop_option, stop_n by yourself
-###############################################
-
-
-####   USER Define ##############################
+#========================================================
+#  User define region 
+# For CIESM users: please define grid, compset, pp, number,
+# casename, SourceMods, stop_option, stop_n, and resubmit by yourself
+#========================================================
 # resolution
-set grid="ne30_g16_rx1"
+#set grid="ne30np4_gx1v6"
+#set grid="ne30_g16_rx1"
 #set grid="ne30_g16"
-#set grid="f09_g16"
+set grid="f09_g16_rx1"
 # compset
 set compset="G"
 # experimental years
-set stop_option="nmonths"
-set stop_n=2
+#set stop_option="nmonths"
+set stop_option="ndays"
+set stop_n=5
+# resubmit number 
+set resubmit=0
 # process number
-set pp=100
+set pp=200
 # machine name
 set machine="cessb"
 
@@ -26,8 +27,16 @@ set iopp=0
 set totalpp=`expr ${pp} + ${iopp}`
 set node=`expr ${totalpp} / 20`
 
+
 # case name
-set casename="mycase2_${compset}_${grid}_${totalpp}" #@@@@@PLEASE MODIFY CASE NAME!!!!@@@@@@
+set casename="t1_${compset}_${grid}_${totalpp}" 
+#@@@@@please modify case name!!!!@@@@@@
+
+
+#========================================================
+#  System configuration for advanced users
+#========================================================
+
 
 #set SourceMods="SourceMods.B2000CAM5.fv"
 #set SourceMods="SourceMods.B2000CAM5.ne"
@@ -108,6 +117,7 @@ source $case1/Tools/ccsm_getenv
 
 ./xmlchange -file env_run.xml -id STOP_OPTION -val $stop_option
 ./xmlchange -file env_run.xml -id STOP_N -val $stop_n
+./xmlchange -file env_run.xml -id RESUBMIT -val $resubmit
 ./xmlchange -file env_run.xml -id DOUT_S_SAVE_INT_REST_FILES -val $dout
 #./xmlchange -file env_run.xml -id PIO_TYPENAME -val "cfio" 
 #./xmlchange -file env_run.xml -id PIO_TYPENAME -val "pnetcdf" 
@@ -150,7 +160,7 @@ cp -r $rootpwd/SourceMods.POP/CESM-PCSI/* SourceMods/
 cp -r $rootpwd/SourceMods.POP/CESM-FLUX/* SourceMods/
 
 #add the tke correction of vmix_kpp
-#cp -r $rootpwd/SourceMods.POP/CESM-TKE/* SourceMods/
+cp -r $rootpwd/SourceMods.POP/CESM-TKE/* SourceMods/
 #=============================================
 
 

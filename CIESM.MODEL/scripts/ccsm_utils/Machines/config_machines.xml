@@ -527,7 +527,7 @@
 </machine>
 
 <machine MACH="cessb">
-	<DESC>SuperMicro, os is Linux, 20 pes/node, batch system is PBS</DESC>
+	<DESC>SuperMicro, os is Linux, 28 pes/node, batch system is PBS</DESC>
 	<OS>LINUX</OS>
 	<COMPILERS>intel</COMPILERS>
 	<MPILIBS>impi</MPILIBS>
