@@ -27,3 +27,6 @@
 *.out
 *.app
 
+# Dir
+ciesm.run/
+ciesm.archive/
