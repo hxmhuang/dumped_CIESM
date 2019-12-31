@@ -4,7 +4,7 @@ The present CIESM package includes:
 
 (1) Execute ./install.csh to create ciesm.run, ciesm.archive directories.
 
-(2) Edit config_machines.xml, mkbatch.$machine and config_compilers.xml in .../ciesm.model/scripts/ccsm_utils/Machines/ to setup your machine, job system, initial data directory and compiling enenvironment.
+(2) Edit config_machines.xml, mkbatch.$machine and config_compilers.xml in .../ciesm.model/scripts/ccsm_utils/Machines/ to setup your machine, job system, initial data directory and compiling environment.
 
 (3) Edit gen_newcase.csh to setup your experiments and execute gen_newcase.csh to generate your experiments.
 
