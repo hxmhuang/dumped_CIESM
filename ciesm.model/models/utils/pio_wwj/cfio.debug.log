@@ -1,0 +1,30 @@
+ionf_mod.F90            79 [CFIO DEBUG]: cfio_create - nfmpi_create
+ionf_mod.F90           227 [CFIO DEBUG]: cfio_mpi_open not defined
+ionf_mod.F90           324 [CFIO DEBUG]: cfio_close not defined
+ionf_mod.F90           387 [CFIO DEBUG]: cfio_sync not defined
+
+nf_mod.F90            1725 [CFIO DEBUG]: cfio_enddef not defined
+nf_mod.F90            1903 [CFIO DEBUG]: cfio_def_dim not defined
+nf_mod.F90            2038 [CFIO DEBUG]: cfio_def_var not defined
+
+piodarray.F90.in      1305 [CFIO DEBUG]: cfio_wait_all not defined
+
+pionfatt_mod.F90.in    169 [CFIO DEBUG]: cfio_put_att_text not defined
+pionfatt_mod.F90.in    200 [CFIO DEBUG]: cfio_put_attdouble not defined
+pionfatt_mod.F90.in    200 [CFIO DEBUG]: cfio_put_attint not defined
+pionfatt_mod.F90.in    200 [CFIO DEBUG]: cfio_put_attreal not defined
+
+pionfwrite_mod.F90.in  130 [CFIO DEBUG]: nfmpi_iput_vara - not defined in CFIO!
+
+pionfput_mod.F90.in    556 [CFIO DEBUG]: cfio_put_vara_text_all not defined
+pionfput_mod.F90.in    816 [CFIO DEBUG]: cfio_put_vara_double_all not defined
+pionfput_mod.F90.in   1254 [CFIO DEBUG]: cfio_put_vara_real_all not defined
+
+pionfread_mod.F90.in   122 [CFIO DEBUG]: nfmpi_get_vara_all - not defined in CFIO!
+
+nf_mod.F90             388 [CFIO DEBUG]: cfio_inq_att not defined
+nf_mod.F90             762 [CFIO DEBUG]: cfio_inq_varid not defined
+nf_mod.F90             988 [CFIO DEBUG]: cfio_inq_varndims not defined
+nf_mod.F90            1217 [CFIO DEBUG]: cfio_inq_vardimid not defined
+nf_mod.F90            1442 [CFIO DEBUG]: cfio_inq_dimid not defined
+nf_mod.F90            1636 [CFIO DEBUG]: cfio_inq_dimlen not defined

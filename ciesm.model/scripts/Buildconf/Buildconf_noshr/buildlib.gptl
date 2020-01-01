@@ -1,0 +1,23 @@
+#! /bin/csh -f
+#==============================================================================
+# Purpose:
+#     (a) Build gptl library
+#==============================================================================
+
+setenv GPTL_DIR $CCSMROOT/models/utils/timing   # gptl directory
+setenv GPTL_LIBDIR $EXEROOT/gptl
+
+echo "Copying source to CESM EXEROOT..."
+
+cd $GPTL_LIBDIR
+
+#$GMAKE -f $GPTL_DIR/Makefile install MACFILE=$CASEROOT/Macros || exit 1
+if ($MACH == sunway) then
+   cp -p $ESM_SOFT/ciesm_lib/gptl/* $GPTL_LIBDIR/ 
+   cp -p $ESM_SOFT/ciesm_lib/gptl/lib*.a $LIBROOT/
+else if ($MACH == sunwayx86) then
+   cp -p $INTEL_ESM_SOFT/ciesm_lib/gptl/* $GPTL_LIBDIR/ 
+   cp -p $INTEL_ESM_SOFT/ciesm_lib/gptl/lib*.a $LIBROOT/
+endif
+
+exit 0

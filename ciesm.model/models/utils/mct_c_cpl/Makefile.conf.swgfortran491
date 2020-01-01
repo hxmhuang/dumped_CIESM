@@ -1,0 +1,88 @@
+# Source location
+SRCDIR = /home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/models/utils/mct
+FDEPENDS=$(SRCDIR)/fdepends.awk
+
+# COMPILER, LIBRARY, AND MACHINE MAKE VARIABLES
+
+# FORTRAN COMPILER VARIABLES #
+
+# FORTRAN COMPILER COMMAND
+FC		= /home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/mpif90.bak 
+
+# FORTRAN AND FORTRAN90 COMPILER FLAGS
+FCFLAGS		= -O2  -DNO_MPIMOD -O2 -fno-range-check -I/usr/sw-mpp/mpi2/include   -DLINUX  -DMCT_INTERFACE -DHAVE_MPI -DFORTRANUNDERSCORE -DNO_R16 -DLINUX -DCPRSWLH -DXUZ -DHAVE_SLASHPROC  -I.  -I/home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/pio -I/home/export/online1/systest/swyyz/xuz/netcdf_swgfortran491/include -I/home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/mct/mct -I/home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/mct/mpeu -I/home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/pio -I/home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/gptl -I/home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/models/utils/pio -I/home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/lib/include 
+
+FC_DEFINE = -D
+
+# FORTRAN COMPILE FLAG FOR AUTOPROMOTION 
+# OF NATIVE REAL TO 8 BIT REAL
+REAL8           = 
+
+# FORTRAN COMPILE FLAGS FOR EXAMPLE PROGRAMS
+PROGFCFLAGS = 
+
+# FORTRAN COMPILE FLAG FOR CHANGING BYTE ORDERING
+ENDIAN          = 
+
+# INCLUDE FLAG FOR LOCATING MODULES (-I, -M, or -p)
+INCFLAG         = -I
+
+# INCLUDE PATHS (PREPEND INCLUDE FLAGS -I, -M or -p)
+INCPATH         =  
+
+# MPI LIBRARIES (USUALLY -lmpi)
+MPILIBS         = openmpi,mpich,mpt,mpt,ibm,mpi-serial
+
+# PREPROCESSOR VARIABLES #
+
+# COMPILER AND OS DEFINE FLAGS
+CPPDEFS =  -DLINUX  -DMCT_INTERFACE -DHAVE_MPI -DFORTRANUNDERSCORE -DNO_R16 -DLINUX -DCPRSWLH -DXUZ -DHAVE_SLASHPROC -DSYSLINUX -DCPRGNU 
+
+FPPDEFS=$(patsubst -D%,$(FC_DEFINE)%,$(CPPDEFS))
+
+# C COMPILER VARIABLES #
+
+# C COMPILER
+CC		= swgcc491 
+
+# C COMPILER FLAGS - APPEND CFLAGS
+CFLAGS       = -O2     -DLINUX  -DMCT_INTERFACE -DHAVE_MPI -DFORTRANUNDERSCORE -DNO_R16 -DLINUX -DCPRSWLH -DXUZ -DHAVE_SLASHPROC -I.. -I.  -I/home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/pio -I/home/export/online1/systest/swyyz/xuz/netcdf_swgfortran491/include -I/home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/mct/mct -I/home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/mct/mpeu -I/home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/pio -I/home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/gptl -I/home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/models/utils/pio -I/home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/lib/include 
+CPPFLAGS = 
+
+# LIBRARY SPECIFIC VARIABLES #
+
+# USED BY MCT BABEL BINDINGS
+COMPILER_ROOT = 
+BABELROOT     = 
+PYTHON        = 
+PYTHONOPTS    = 
+
+# USED BY MPI-SERIAL LIBRARY
+
+# SIZE OF FORTRAN REAL AND DOUBLE
+FORT_SIZE = 
+
+
+# INSTALLATION VARIABLES #
+
+# INSTALL COMMANDS
+INSTALL         = /home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/mct/install-sh -c
+MKINSTALLDIRS   = /home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/mct/mkinstalldirs
+
+# INSTALLATION DIRECTORIES
+abs_top_builddir= /home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/mct
+MCTPATH         = /home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/mct/mct
+MPEUPATH        = /home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/mct/mpeu
+EXAMPLEPATH     = /home/export/online1/systest/swyyz/xuz/cesm_v1.2.1/test1/bld/mct/examples
+MPISERPATH      = 
+libdir          = /usr/local/lib
+includedir      = /usr/local/include
+
+# OTHER COMMANDS #
+AR		= ar cq
+RM		= rm -f
+
+
+
+
+

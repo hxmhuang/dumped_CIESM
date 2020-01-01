@@ -1,0 +1,56 @@
+#
+# Makefile Macros generated from /home/export/online1/qhtest/cess/yangjie/ciesm/ciesm.model/scripts/ccsm_utils/Machines/config_compilers.xml using
+# COMPILER=intel
+# OS=LINUX
+# MACH=sunwayx86
+#
+CPPDEFS+= -DFORTRANUNDERSCORE -DNO_R16 -DLINUX -DCPRINTEL 
+
+SLIBS+=-L${INTEL_ESM_SOFT}/lib -lnetcdff -lnetcdf -lhdf5 -lz -lpnetcdf 
+
+CFLAGS:= -O2 -fp-model precise 
+
+CXX_LDFLAGS:= -cxxlib 
+
+CXX_LINKER:=FORTRAN
+
+FC_AUTO_R8:= -r8 -i4 
+
+FFLAGS:= -O2 -fp-model source -convert big_endian -assume byterecl -fp-speculation=safe -no-vec -FR 
+
+FFLAGS_NOOPT:= -O0 
+
+FIXEDFLAGS:= -fixed -132 
+
+FREEFLAGS:= -free 
+
+LDFLAGS:= -L${INTEL_ESM_SOFT}/lib -lnetcdff -lnetcdf 
+
+MPICC:= mpiicc  
+
+MPICXX:= mpiicpc 
+
+MPIFC:= mpiifort 
+
+NETCDF_PATH:=${INTEL_ESM_SOFT}
+
+PNETCDF_PATH:=${INTEL_ESM_SOFT}
+
+SCC:= icc 
+
+SCXX:= icpc 
+
+SFC:= ifort 
+
+SUPPORTS_CXX:=TRUE
+
+ifeq ($(DEBUG), TRUE) 
+   FFLAGS += -g -CU -check pointers -fpe0 
+endif
+
+ifeq ($(compile_threaded), true) 
+   LDFLAGS += -openmp 
+   CFLAGS += -openmp 
+   FFLAGS += -openmp 
+endif
+

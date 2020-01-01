@@ -1,0 +1,73 @@
+SVN $Id: ChangeLog 55763 2013-12-02 23:24:38Z mlevy@ucar.edu $
+SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/pop2/release_tags/cesm1_2_x_n01_cesm_pop_2_1_20130521/ChangeLog $
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy
+Tag Date:    2 Dec 2013
+Tag Name:    pop2/branch_tags/cesm1_2_x_rel_tags/cesm1_2_x_rel_06_cesm_pop_2_1_20130521
+Tag Summary: Update default values for ecosys
+
+Files Modified:
+M       source/ecosys_parms.F90
+M       bld/namelist_files/namelist_defaults_pop2.xml
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy
+Tag Date:    26 Nov 2013
+Tag Name:    pop2/branch_tags/cesm1_2_x_rel_tags/cesm1_2_x_rel_05_cesm_pop_2_1_20130521
+Tag Summary: Fe input was over-writing atmospheric Fe flux when it should
+             have been treating it as an additive flux
+
+Files Modified:
+M       source/ecosys_mod.F90
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy
+Tag Date:    26 Nov 2013
+Tag Name:    pop2/branch_tags/cesm1_2_x_rel_tags/cesm1_2_x_rel_04_cesm_pop_2_1_20130521
+Tag Summary: Fix to allow completed multi-instance cases to be started from
+             the beginning (rather than continued)
+
+Files Modified:
+M       bld/pop2.buildnml.csh
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy
+Tag Date:    26 Nov 2013
+Tag Name:    pop2/branch_tags/cesm1_2_x_rel_tags/cesm1_2_x_rel_03_cesm_pop_2_1_20130521
+Tag Summary: Two ecosys bug fixes:
+             1) Global Si values were not tuned correctly
+             2) The variable scalelength was not being applied consistently
+
+Files Modified:
+M       source/ecosys_mod.F90
+M       source/ecosys_parms.F90
+M       bld/namelist_files/namelist_defaults_pop2.xml
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy
+Tag Date:    26 Nov 2013
+Tag Name:    pop2/branch_tags/cesm1_2_x_rel_tags/cesm1_2_x_rel_02_cesm_pop_2_1_20130521
+Tag Summary: Allow POP_DomainSizeMod.F90 and domain_size.F90 to be edited via
+             SourceMods/
+
+Files Modified:
+M       bld/pop2.buildexe.csh
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy
+Tag Date:    25 Nov 2013
+Tag Name:    pop2/branch_tags/cesm1_2_x_rel_tags/cesm1_2_x_rel_01_cesm_pop_2_1_20130521
+Tag Summary: Update to a CFC fix that went in to 1.1.1 and 1.2.0 - that fix
+             did not handle branch runs correctly
+
+Files Modified:
+M       bld/build-namelist
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy
+Tag Date:    25 Nov 2013
+Tag Name:    pop2/branch_tags/cesm1_2_x_rel_tags/cesm1_2_x_rel_00_cesm_pop_2_1_20130521
+Tag Summary: This is identical to pop2/trunk_tags/cesm_pop_2_1_20130521 (the
+             tag used in CESM 1.2.0 release)
+

@@ -1,0 +1,1442 @@
+!>>>>>>>>>>>>>>>>>>>>wwj
+#define CFIO_PIO_LOG "cfio_pio_log"
+!<<<<<<<<<<<<<<<<<<<<<<<<
+#define __PIO_FILE__ "pionfput_mod.F90"
+!>
+!! @file 
+!! $Revision: 788 $
+!! $LastChangedDate: 2013-05-09 02:52:45 +0800 (Thu, 09 May 2013) $
+!! @brief Write Routines for non-decomposed NetCDF data.
+!<
+module pionfput_mod
+#ifdef TIMING
+  use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
+#endif
+  use pio_kinds, only: i4,r4,r8,pio_offset
+  use pio_types, only : file_desc_t, iosystem_desc_t, var_desc_t, &
+	pio_iotype_pbinary, pio_iotype_binary, pio_iotype_direct_pbinary, &
+	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, &
+	pio_noerr
+!>>>>>>>>>>>>>>>>>>>wwj
+  use pio_types, only : pio_iotype_cfio
+!<<<<<<<<<<<<<<<<<<<
+
+  use pio_utils, only : check_netcdf
+  use pio_msg_mod
+  use pio_support, only : Debug, DebugIO, piodie   
+#ifdef _NETCDF
+  use netcdf            ! _EXTERNAL
+#endif
+#ifndef NO_MPIMOD
+  use mpi   ! _EXTERNAL
+#endif
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zc
+#ifdef _CFIO
+use cfio
+#endif
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< zc
+  implicit none
+  private
+#ifdef _PNETCDF
+#include <pnetcdf.inc>  /* _EXTERNAL */
+#endif
+
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zc
+#ifdef _CFIO
+#include <pnetcdf.inc>  /* _EXTERNAL */
+#endif
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< zc
+
+#ifdef _NETCDF
+! Required for netcdf bug workaround
+  integer, external :: nf_put_vars_text
+#endif
+#ifdef NO_MPIMOD
+  include 'mpif.h'   ! _EXTERNAL
+#endif
+!>
+!! @defgroup PIO_put_var PIO_put_var
+!! @brief Writes netcdf metadata to a file
+!! @details The put_var interface is provided as a simplified interface to
+!!  write variables to a netcdf format file.   
+!! @warning Although this is a collective call the variable is written from the 
+!!  root IO task, no consistancy check is made with data passed on other tasks.
+!! 
+!<
+  public :: put_var
+  interface put_var
+     !  DIMS 0,1,2,3,4,5
+     module procedure put_var_{DIMS}d_{TYPE}, put_var_vdesc_{DIMS}d_{TYPE}
+     !  DIMS 1,2,3,4,5
+     module procedure put_vara_{DIMS}d_{TYPE}, put_vara_vdesc_{DIMS}d_{TYPE}
+     module procedure put_var1_{TYPE}, put_var1_vdesc_{TYPE}
+  end interface
+contains
+
+!>
+!! @public
+!! @ingroup PIO_put_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param index : 
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+  integer function put_var1_text (File,varid, index, ival) result(ierr)
+    type (File_desc_t), intent(inout) :: File
+    integer, intent(in) :: varid, index(:)
+    character(len=*), intent(in) :: ival
+    integer, allocatable :: count(:)
+    integer :: iotype
+    type(iosystem_desc_t), pointer :: ios
+    integer :: xlen, msg, mpierr, isize, itype
+    integer(4) :: ndims
+
+#ifdef TIMING
+    call t_startf("pio_put_var1_text")
+#endif 
+    ierr=PIO_NOERR
+    iotype = File%iotype 
+    if(debug) print *,__PIO_FILE__,__LINE__,ival,iotype, index
+
+    ios=>File%iosystem
+
+    xlen = len_trim(ival)
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_PUTVAR1
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       isize = size(index)
+       call MPI_BCAST(isize,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(index,isize,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+    endif
+
+    if(ios%async_interface) then
+       call MPI_BCAST(ival,xlen,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
+    end if
+
+
+
+    if(Ios%IOProc) then
+       allocate(count(size(index)))
+       if(Ios%io_rank == 0) then
+          count(:) = 1
+          count(1) = len(ival)
+       else
+          count(:) = 0
+       end if
+
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+#ifdef USE_INDEP_WRITE
+          ierr = nfmpi_begin_indep_data(File%fh)
+          if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
+             ierr = nfmpi_put_vara (File%fh, varid, int(index,kind=PIO_OFFSET), &
+                  int(count,kind=PIO_OFFSET), ival, int(count,kind=PIO_OFFSET), &
+                  MPI_CHARACTER)
+          end if
+          if(ierr==PIO_NOERR) then
+             ierr = nfmpi_end_indep_data(File%fh)
+          end if
+#else
+             ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), &
+                  int(count,kind=PIO_OFFSET), &
+                  ival, int(count,kind=PIO_OFFSET), MPI_CHARACTER)
+#endif
+
+#endif
+
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zc
+#ifdef _CFIO
+       case(pio_iotype_cfio)
+#ifdef USE_INDEP_WRITE
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_begin_indep_data - not defined"
+          endif
+#endif
+          ierr = nfmpi_begin_indep_data(File%fh)
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: nfmpi_begin_indep_data &
+             over",ierr
+          endif
+#endif
+          if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_put_vara - not defined"
+          endif
+#endif
+             ierr = nfmpi_put_vara (File%fh, varid, int(index,kind=PIO_OFFSET), &
+                  int(count,kind=PIO_OFFSET), ival, int(count,kind=PIO_OFFSET), &
+                  MPI_CHARACTER)
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: nfmpi_put_vara over",ierr
+          endif
+#endif
+          end if
+          if(ierr==PIO_NOERR) then
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_end_indep_data not &
+             defined"
+          endif
+#endif
+             ierr = nfmpi_end_indep_data(File%fh)
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: nfmpi_end_indep_data over",ierr
+          endif
+#endif
+          end if
+#else
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_put_vara_all not&
+             defined"
+          endif
+#endif
+         !    ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), &
+         !         int(count,kind=PIO_OFFSET), &
+         !         ival, int(count,kind=PIO_OFFSET), MPI_CHARACTER)
+         !   ndims = 1
+         !    ierr = cfio_put_vara_text (File%fh, varid, ndims, int(index),int(count), ival) 
+         ierr = PIO_NOERR
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: nfmpi_put_vara_all over",ierr
+          endif
+#endif
+#endif
+
+
+#endif
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< zc
+
+#ifdef _NETCDF
+       case (pio_iotype_netcdf4p)
+          ierr = nf90_put_var(File%fh, varid, ival, start=index)
+       case(pio_iotype_netcdf,pio_iotype_netcdf4c)
+          ! Only io proc 0 will do writing
+          if (Ios%io_rank == 0) then
+             ierr = nf90_put_var(File%fh, varid, ival, start=index)
+          end if
+#endif
+       case default
+          print *,__PIO_FILE__,__LINE__,iotype
+          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified")
+       end select
+       deallocate(count)
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+
+#ifdef TIMING
+    call t_stopf("pio_put_var1_text")
+#endif 
+  end function put_var1_text
+! TYPE int,real,double
+!>
+!! @public
+!! @ingroup PIO_put_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param index : 
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+  integer function put_var1_{TYPE} (File,varid, index, ival) result(ierr)
+    type (File_desc_t), intent(inout) :: File
+    integer, intent(in) :: varid, index(:)
+    {VTYPE}, intent(in) :: ival
+    integer, allocatable :: count(:)
+    integer :: iotype, isize
+    type(iosystem_desc_t), pointer :: ios
+    integer :: xlen, msg, mpierr, itype
+    integer(4) :: ndims
+
+#ifdef TIMING
+    call t_startf("pio_put_var1_{TYPE}")
+#endif 
+    ierr=PIO_NOERR
+    iotype = File%iotype 
+    if(debug) print *,__PIO_FILE__,__LINE__,ival,iotype, index
+
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_PUTVAR1
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       isize = size(index)
+       call MPI_BCAST(isize,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(index,isize,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = {ITYPE}
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+    endif
+
+    if(ios%async_interface) then
+       call MPI_BCAST(ival,1,{MPITYPE},ios%CompMaster, ios%my_comm , mpierr)
+    end if
+
+
+
+    if(Ios%IOProc) then
+       allocate(count(size(index)))
+       if(Ios%io_rank == 0) then
+          count(:) = 1
+       else
+          count(:) = 0
+       end if
+
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+#ifdef USE_INDEP_WRITE
+          ierr = nfmpi_begin_indep_data(File%fh)
+          if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
+             ierr = nfmpi_put_vara (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), &
+                  ival, int(count,kind=PIO_OFFSET), {MPITYPE})
+          end if
+          if(ierr==PIO_NOERR) then
+             ierr = nfmpi_end_indep_data(File%fh)
+          end if
+#else
+          ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), &
+               ival, int(count,kind=PIO_OFFSET), {MPITYPE})
+
+#endif
+#endif
+
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zc
+#ifdef _CFIO
+       case(pio_iotype_cfio)
+#ifdef USE_INDEP_WRITE
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_begin_indep_data not&
+             defined"
+          endif
+#endif
+          ierr = nfmpi_begin_indep_data(File%fh)
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: nfmpi_begin_indep_data over",ierr
+          endif
+#endif
+          if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_put_vara not defined"
+          endif
+#endif
+             ierr = nfmpi_put_vara (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), &
+                  ival, int(count,kind=PIO_OFFSET), {MPITYPE})
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: nfmpi_put_vara over",ierr
+          endif
+#endif
+          end if
+          if(ierr==PIO_NOERR) then
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_end_indep_data not&
+             defined" 
+          endif
+#endif
+             ierr = nfmpi_end_indep_data(File%fh)
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: nfmpi_end_indep_data over",ierr
+          endif
+#endif
+          end if
+#else
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_put_vara_all not defined"
+          endif
+#endif
+        !  ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), &
+        !       ival, int(count,kind=PIO_OFFSET), {MPITYPE})
+       ! ndims = 1
+       !   ierr = cfio_put_vara_{TYPE} (File%fh, varid, ndims, int(index), int(count),ival)
+       ierr = PIO_NOERR
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: nfmpi_put_vara_all over",ierr
+          endif
+#endif
+
+#endif
+
+#endif
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< zc
+
+#ifdef _NETCDF
+       case (pio_iotype_netcdf4p)
+          ierr = nf90_put_var(File%fh, varid, ival, start=index)
+       case(pio_iotype_netcdf,pio_iotype_netcdf4c)
+          ! Only io proc 0 will do writing
+          if (Ios%io_rank == 0) then
+             ierr = nf90_put_var(File%fh, varid, ival, start=index)
+          end if
+#endif
+       case default
+          print *,__PIO_FILE__,__LINE__,iotype
+          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified")
+       end select
+       deallocate(count)
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+
+#ifdef TIMING
+    call t_stopf("pio_put_var1_{TYPE}")
+#endif 
+  end function put_var1_{TYPE}
+
+!>
+!! @public
+!! @ingroup PIO_put_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param start : 
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+  integer function put_var1_vdesc_{TYPE} (File,vardesc, start, ival) result(ierr)
+    type (File_desc_t), intent(inout) :: File
+    type(var_desc_t), intent(in) :: vardesc
+    integer, intent(in) ::  start(:)
+    {VTYPE}, intent(in) :: ival
+
+    ierr = put_var1_{TYPE} (File, vardesc%varid, start, ival)
+  end function put_var1_vdesc_{TYPE}
+
+! DIMS 0,1,2,3,4,5
+! TYPE text
+!>
+!! @public
+!! @ingroup PIO_put_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! @param varid : The netcdf variable identifier
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+  integer function put_var_{DIMS}d_text (File,varid, ival) result(ierr)
+    type (File_desc_t), intent(inout) :: File
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: ival{DIMSTR}
+    integer :: iotype
+    integer :: i, is, msg, mpierr, xlen, itype
+    type(iosystem_desc_t), pointer :: ios
+    integer :: dims({DIMS})
+    integer :: start({DIMS}+1), count({DIMS}+1)
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zc
+    character, allocatable :: ival_to_arr(:)
+    integer :: len_total, pos, d0, d1, d2, d3, d4, d5
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< zc
+#ifdef TIMING
+    call t_startf("pio_put_var_{DIMS}d_text")
+#endif 
+    ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_PUTVAR_{DIMS}d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+
+#if ({DIMS} > 0)
+       do i=1,{DIMS}
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,{DIMS},MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+       xlen = len(ival)
+       call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+    endif
+
+    if(ios%async_interface ) then
+#if({DIMS}==0)       
+       call MPI_BCAST(ival,len_trim(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
+#else
+       call MPI_BCAST(ival,size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+    end if
+
+    if(Ios%IOProc) then
+       if(Ios%io_rank==0) then
+    	  count(1)=len(ival)
+	  is=1
+#if ({DIMS} > 0)
+          do i=1,{DIMS}
+             count(i+is) = size(ival,i)
+          end do
+#endif
+       end if
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          if(ios%io_rank>0) count = 0
+          ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid,int(start,kind=pio_offset),&
+               int(count,kind=pio_offset),ival)
+#endif
+
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zc
+#ifdef _CFIO
+       case(pio_iotype_cfio)
+
+          if (0 == Ios%io_rank) then
+             !!! allocate memory
+             len_total = count(1)
+             do i = 1, {DIMS}
+                len_total = len_total * count(i+1)
+             end do
+             allocate(ival_to_arr(len_total))
+
+             !!! copy ival to ival_to_arr
+             pos = 1
+#if (0 == {DIMS})       
+             do d0 = 1, count(1)
+                 ival_to_arr(pos) = ival(d0:d0)
+                 pos = pos + 1
+             end do
+#elif (1 == {DIMS})       
+             do d1 = 1, count(2)
+             do d0 = 1, count(1)
+                 ival_to_arr(pos) = ival(d1)(d0:d0)
+                 pos = pos + 1
+             end do
+             end do
+#elif (2 == {DIMS})       
+             do d2 = 1, count(3)
+             do d1 = 1, count(2)
+             do d0 = 1, count(1)
+                 ival_to_arr(pos) = ival(d1, d2)(d0:d0)
+                 pos = pos + 1
+             end do
+             end do
+             end do
+#elif (3 == {DIMS})       
+             do d3 = 1, count(4)
+             do d2 = 1, count(3)
+             do d1 = 1, count(2)
+             do d0 = 1, count(1)
+                 ival_to_arr(pos) = ival(d1, d2, d3)(d0:d0)
+                 pos = pos + 1
+             end do
+             end do
+             end do
+             end do
+#elif (4 == {DIMS})       
+             else if (4 == {DIMS}) then
+             do d4 = 1, count(5)
+             do d3 = 1, count(4)
+             do d2 = 1, count(3)
+             do d1 = 1, count(2)
+             do d0 = 1, count(1)
+                 ival_to_arr(pos) = ival(d1, d2, d3, d4)(d0:d0)
+                 pos = pos + 1
+             end do
+             end do
+             end do
+             end do
+             end do
+#elif (5 == {DIMS})       
+             do d5 = 1, count(6)
+             do d4 = 1, count(5)
+             do d3 = 1, count(4)
+             do d2 = 1, count(3)
+             do d1 = 1, count(2)
+             do d0 = 1, count(1)
+                 ival_to_arr(pos) = ival(d1, d2, d3, d4, d5)(d0:d0)
+                 pos = pos + 1
+             end do
+             end do
+             end do
+             end do
+             end do
+             end do
+#endif
+          else !!! io_rank > 0
+             count = 0
+          end if
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_{TYPE}_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_put_vara_{TYPE} ..."
+             print *, "[CFIO DEBUG]: {DIMS}", len(ival)
+          endif
+#endif
+
+          ierr = cfio_put_vara_{TYPE} (File%fh, varid, {DIMS}+1, int(start), int(count), ival_to_arr)
+
+#ifdef CFIO_DEBUG
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_put_vara_{TYPE} over ",ierr
+          endif
+#endif
+
+          if(0 == Ios%io_rank) then
+             deallocate(ival_to_arr)
+          end if
+#endif
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< zc
+
+#ifdef _NETCDF
+       case(pio_iotype_netcdf4p)
+#if ({DIMS}==0)
+! This is a workaround for a bug in the netcdf f90 interface
+! The netcdf bug is that when you use nf90_put_var
+! to write a scalar string the trailing blanks are stripped by the specific
+! function nf90_put_var_text before it calls nf_put_vars_text. 
+          if (Ios%io_rank == 0) then
+             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
+          else
+             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/0/), (/1/), ival)
+          end if
+#else
+          ierr = nf90_put_var(File%fh, varid, ival, start=start, count=count)
+#endif
+       case(pio_iotype_netcdf,pio_iotype_netcdf4c)
+          ! Only io proc 0 will do writing
+          if (Ios%io_rank == 0) then
+
+#if ({DIMS}==0)
+! This is a workaround for a bug in the netcdf f90 interface
+! The netcdf bug is that when you use nf90_put_var
+! to write a scalar string the trailing blanks are stripped by the specific
+! function nf90_put_var_text before it calls nf_put_vars_text. 
+             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
+#else
+             ierr = nf90_put_var(File%fh, varid, ival)
+#endif
+          end if
+#endif
+       case default
+          print *,__PIO_FILE__,__LINE__,iotype
+          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified" )
+
+       end select
+    end if
+
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+#ifdef TIMING
+    call t_stopf("pio_put_var_{DIMS}d_text")
+#endif 
+  end function put_var_{DIMS}d_text
+
+! DIMS 1,2,3,4,5
+! TYPE int,real,double
+!>
+!! @public
+!! @ingroup PIO_put_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! @param varid : The netcdf variable identifier
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+  integer function put_var_{DIMS}d_{TYPE} (File,varid, ival) result(ierr)
+    type (File_desc_t), intent(inout) :: File
+    integer, intent(in) :: varid
+    {VTYPE}, intent(in) :: ival{DIMSTR}
+    integer :: iotype, itype
+    integer :: i, is, msg, mpierr, xlen
+    type(iosystem_desc_t), pointer :: ios
+    integer :: dims({DIMS})
+    integer :: start({DIMS}), count({DIMS})
+    integer(4) :: ndims
+
+
+
+    ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+#ifdef _PNETCDF
+    if(iotype == pio_iotype_pnetcdf) then
+       do i=1,{DIMS}
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_{DIMS}d_{TYPE} (File, varid, start, count, ival)
+       return
+    end if
+#endif
+
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zc
+#ifdef _CFIO
+    if(iotype == pio_iotype_cfio) then
+       do i=1,{DIMS}
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_{DIMS}d_{TYPE} (File, varid, start, count, ival)
+       return
+    end if
+#endif
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< zc
+
+#ifdef TIMING
+    call t_startf("pio_put_var_{DIMS}d_{TYPE}")
+#endif 
+
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_PUTVAR_{DIMS}d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = {ITYPE}
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       do i=1,{DIMS}
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,{DIMS},MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+    endif
+
+    if(ios%async_interface ) then
+       call MPI_BCAST(ival,size(ival),{MPITYPE},ios%CompMaster, ios%my_comm , mpierr)
+    end if
+
+    if(Ios%IOProc) then
+       if(Ios%io_rank==0) then
+          do i=1,{DIMS}
+             count(i+is) = size(ival,i)
+          end do
+       end if
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          if(Ios%io_rank>0) count=0
+          ierr = nfmpi_put_vara_{TYPE}_all(File%fh, varid, int(start,kind=pio_offset),&
+               int(count,kind=pio_offset),ival)
+#endif
+
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zc
+#ifdef _CFIO
+       case(pio_iotype_cfio)
+          if(Ios%io_rank>0) count=0
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_{TYPE}_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_put_vara_{TYPE}_all not defined"
+          endif
+#endif
+          !ierr = nfmpi_put_vara_{TYPE}_all(File%fh, varid, int(start,kind=pio_offset),&
+          !     int(count,kind=pio_offset),ival)
+          ndims = {DIMS}
+          !ierr = cfio_put_vara_{TYPE}(File%fh, varid, ndims, int(start),int(count), ival)
+          ierr = PIO_NOERR
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: nfmpi_put_vara_{TYPE}_all over",ierr
+          endif
+#endif
+#endif
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< zc
+
+#ifdef _NETCDF
+       case(pio_iotype_netcdf4p)
+          ierr = nf90_put_var(File%fh, varid, ival, start=start, count=count)
+       case(pio_iotype_netcdf,pio_iotype_netcdf4c)
+          ! Only io proc 0 will do writing
+          if (Ios%io_rank == 0) then
+             ierr = nf90_put_var(File%fh, varid, ival)
+          end if
+#endif
+       case default
+          print *,__PIO_FILE__,__LINE__,iotype
+          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified" )
+
+       end select
+    end if
+
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+#ifdef TIMING
+    call t_stopf("pio_put_var_{DIMS}d_{TYPE}")
+#endif 
+  end function put_var_{DIMS}d_{TYPE}
+
+! TYPE int,real,double
+!>
+!! @public
+!! @ingroup PIO_put_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! @param varid : The netcdf variable identifier
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+  integer function put_var_0d_{TYPE} (File,varid, ival) result(ierr)
+    type (File_desc_t), intent(inout) :: File
+    integer, intent(in) :: varid
+    {VTYPE}, intent(in) :: ival
+    integer :: iotype
+    integer :: i, is, msg, mpierr, xlen
+    type(iosystem_desc_t), pointer :: ios
+    integer :: start(1),count(1), itype
+    integer(4) :: ndims
+
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zc
+#ifdef _CFIO
+    {VTYPE} :: ival_to_arr(1)
+#endif
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< zc
+
+    ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 1
+    is=0       
+
+#ifdef TIMING
+    call t_startf("pio_put_var_0d_{TYPE}")
+#endif 
+
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_PUTVAR_0d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = {ITYPE}
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+    endif
+
+    if(ios%async_interface ) then
+       call MPI_BCAST(ival,1,{MPITYPE},ios%CompMaster, ios%my_comm , mpierr)
+    end if
+
+    if(Ios%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          if(Ios%io_rank>0) count=0
+          ierr = nfmpi_put_vara_{TYPE}_all(File%fh, varid, int(start,kind=pio_offset),&
+               int(count,kind=pio_offset),ival)
+#endif
+
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zc
+#ifdef _CFIO
+       case(pio_iotype_cfio)
+          if(Ios%io_rank>0) count=0
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_{TYPE}_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_put_vara_{TYPE} ... "
+          endif
+#endif
+          !!! PnetCDF
+          !ierr = nfmpi_put_vara_{TYPE}_all(File%fh, varid, int(start,kind=pio_offset),&
+          !     int(count,kind=pio_offset),ival)
+         ! ndims = 1
+         ! ierr = cfio_put_vara_{TYPE}(File%fh, varid, ndims,int(start),int(count), ival)
+
+          !!! CFIO
+          ival_to_arr(1) = ival
+          ierr = cfio_put_vara_{TYPE}(File%fh, varid, 0, start, count, ival_to_arr)
+          !ierr = PIO_NOERR
+
+#ifdef CFIO_DEBUG
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_put_vara_{TYPE} over ", ierr
+          endif
+#endif
+
+#endif
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< zc
+
+#ifdef _NETCDF
+       case(pio_iotype_netcdf4p)
+          ierr = nf90_put_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf,pio_iotype_netcdf4c)
+          ! Only io proc 0 will do writing
+          if (Ios%io_rank == 0) then
+             ierr = nf90_put_var(File%fh, varid, ival)
+          end if
+#endif
+       case default
+          print *,__PIO_FILE__,__LINE__,iotype
+          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified" )
+
+       end select
+    end if
+
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+#ifdef TIMING
+    call t_stopf("pio_put_var_0d_{TYPE}")
+#endif 
+  end function put_var_0d_{TYPE}
+
+! DIMS 0,1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_put_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+  integer function put_var_vdesc_{DIMS}d_{TYPE} (File, vardesc, ival) result(ierr)
+    type (File_desc_t), intent(inout) :: File
+    type(var_desc_t) , intent(in) :: vardesc
+    {VTYPE}, intent(in) :: ival{DIMSTR}
+    integer :: iotype
+
+    ierr = put_var_{DIMS}d_{TYPE} (File, vardesc%varid, ival)
+  end function put_var_vdesc_{DIMS}d_{TYPE}
+
+! DIMS 1,2,3,4,5
+! TYPE text
+!>
+!! @public
+!! @ingroup PIO_put_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+  integer function put_vara_{DIMS}d_text (File,varid, start, count, ival) result(ierr)
+    use nf_mod, only : pio_inq_varndims
+    type (File_desc_t), intent(inout) :: File
+    integer, intent(in) :: varid, start(:), count(:)
+
+    integer(kind=PIO_OFFSET), allocatable :: pstart(:), pcount(:)
+
+    character(len=*), intent(in) :: ival{DIMSTR}
+    integer :: iotype, i,  msg, mpierr
+    integer(kind=pio_offset) :: clen
+    type(iosystem_desc_t), pointer :: ios
+    integer :: dims({DIMS}), xlen, itype, slen
+    integer(4) :: ndims
+#ifdef TIMING
+    call t_startf("pio_put_vara_{DIMS}d_text")
+#endif 
+    ndims=0
+    ierr=0
+    iotype = File%iotype 
+    ios=>File%iosystem
+    xlen = len(ival)
+    if(.not. ios%async_interface .or. .not. ios%ioproc ) then
+       ierr = pio_inq_varndims(File, varid, ndims)
+    end if
+
+
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_PUTVARA_{DIMS}d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+
+#if ({DIMS} > 0)
+       do i=1,{DIMS}
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,{DIMS},MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+       call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+    endif
+
+    if(ios%async_interface ) then    
+       call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ival,xlen*size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
+    end if
+
+
+
+    
+    if(Ios%IOProc) then
+       allocate(pstart(ndims),pcount(ndims))
+       if(Ios%io_rank==0) then
+          pstart = start(1:ndims)
+          pcount = count(1:ndims)
+       else
+          pstart=1 ! avoids an unessasary pnetcdf error 
+          pcount=0
+       endif
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          clen=count(1)
+          do i=2,size(count)
+             clen=clen*count(i)
+          end do
+#ifdef USE_INDEP_WRITE
+          ierr = nfmpi_begin_indep_data(File%fh)
+          if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
+             ierr = nfmpi_put_vara_{TYPE} (File%fh, varid, pstart, &
+                  pcount, ival, clen, {MPITYPE})
+          end if
+          if(ierr==PIO_NOERR) then
+             ierr = nfmpi_end_indep_data(File%fh)
+          end if
+#else
+             ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid, pstart, &
+                  pcount, ival, clen, {MPITYPE})
+
+#endif
+#endif
+
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zc
+#ifdef _CFIO
+       case(pio_iotype_cfio)
+          clen=count(1)
+          do i=2,size(count)
+             clen=clen*count(i)
+          end do
+#ifdef USE_INDEP_WRITE
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+            print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_begin_indep_data not&
+             defined"
+          endif
+#endif
+          ierr = nfmpi_begin_indep_data(File%fh)
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: nfmpi_begin_indep_data over",ierr
+          endif
+#endif
+          if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_put_vara_{TYPE} not&
+             defined"
+          endif
+#endif
+             ierr = nfmpi_put_vara_{TYPE} (File%fh, varid,  pstart, &
+                  pcount, ival, clen, {MPITYPE})
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: nfmpi_put_vara_{TYPE} over",ierr
+          endif
+#endif
+          end if
+          if(ierr==PIO_NOERR) then
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_end_indep_data not&
+             defined" 
+          endif
+#endif
+             ierr = nfmpi_end_indep_data(File%fh)
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: nfmpi_end_indep_data over",ierr
+          endif
+#endif
+          end if
+#else
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_put_vara_{TYPE}_all&
+             not defined" 
+          endif
+#endif
+          !   ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid, pstart, &
+          !        pcount, ival, clen, {MPITYPE})
+             !ierr = cfio_put_vara_{TYPE} (File%fh, varid, ndims, int(pstart),int(pcount), ival)
+             ierr = PIO_NOERR
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: nfmpi_put_vara_{TYPE}_all over",ierr
+          endif
+#endif
+
+#endif
+#endif
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< zc
+
+#ifdef _NETCDF
+       case(pio_iotype_netcdf4p)
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do writing
+          if (Ios%io_rank == 0) then
+             ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          end if
+#endif
+       case default
+          print *,__PIO_FILE__,__LINE__,iotype
+          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified")
+       end select
+       deallocate(pstart, pcount)
+    end if
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
+
+#ifdef TIMING
+    call t_stopf("pio_put_vara_{DIMS}d_{TYPE}")
+#endif 
+  end function put_vara_{DIMS}d_text
+! TYPE int,real,double
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_put_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+  integer function put_vara_{DIMS}d_{TYPE} (File,varid, start, count, ival) result(ierr)
+    use nf_mod, only : pio_inq_varndims
+    type (File_desc_t), intent(inout) :: File
+    integer, intent(in) :: varid, start(:), count(:)
+
+    integer(kind=PIO_OFFSET), allocatable :: pstart(:), pcount(:)
+
+    {VTYPE}, intent(in) :: ival{DIMSTR}
+    integer :: iotype, i, msg, mpierr
+    integer(kind=pio_offset) :: clen
+    type(iosystem_desc_t), pointer :: ios
+    integer :: dims({DIMS}), xlen, itype, slen
+    integer(4) :: ndims
+#ifdef TIMING
+    call t_startf("pio_put_vara_{DIMS}d_{TYPE}")
+#endif 
+    ierr=0
+    iotype = File%iotype 
+    ios=>File%iosystem
+    xlen=1
+    if(.not. ios%async_interface .or. .not. ios%ioproc ) then
+       ierr = pio_inq_varndims(File, varid, ndims)
+    end if
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_PUTVARA_{DIMS}d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = {ITYPE}
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+
+#if ({DIMS} > 0)
+       do i=1,{DIMS}
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,{DIMS},MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+    endif
+
+    if(ios%async_interface ) then    
+       call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ival,xlen*size(ival),{MPITYPE},ios%CompMaster, ios%my_comm , mpierr)
+    end if
+
+
+    
+    if(Ios%IOProc) then
+       allocate(pstart(ndims),pcount(ndims))
+       if(Ios%io_rank==0) then
+          pstart = start(1:ndims)
+          pcount = count(1:ndims)
+
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zc
+          !print *,__FILE__,__LINE__,"[CFIO DEBUG]: put_vara_{DIMS}d_{TYPE} ndims start count ..." 
+          !do i = 1, ndims
+          !   print *, __FILE__,__LINE__,start(i),count(i)
+          !end do
+          !print *,__FILE__,__LINE__,"[CFIO DEBUG]: put_vara_{DIMS}d_{TYPE} ndims start count over" 
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< zc
+
+       else
+          pstart=1 ! avoids an unessasary pnetcdf error 
+          pcount=0
+
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zc
+!          print *,__FILE__,__LINE__,"[CFIO DEBUG]: put_vara_{DIMS}d_{TYPE} ndims start count ..." 
+!          print *,__FILE__,__LINE__,"funk"
+!          print *,__FILE__,__LINE__,"[CFIO DEBUG]: put_vara_{DIMS}d_{TYPE} ndims start count over" 
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< zc
+       endif
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          clen=count(1)
+          do i=2,size(count)
+             clen=clen*count(i)
+          end do
+#ifdef USE_INDEP_WRITE
+          ierr = nfmpi_begin_indep_data(File%fh)
+          if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
+             ierr = nfmpi_put_vara_{TYPE} (File%fh, varid, pstart, &
+                  pcount, ival, clen, {MPITYPE})
+          end if
+          if(ierr==PIO_NOERR) then
+             ierr = nfmpi_end_indep_data(File%fh)
+          end if
+#else
+          ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid, pstart, &
+               pcount, ival, clen, {MPITYPE})
+
+#endif
+#endif
+
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zc
+#ifdef _CFIO
+       case(pio_iotype_cfio)
+
+           clen=count(1)
+           do i=2,size(count)
+               clen=clen*count(i)
+           end do
+#ifdef USE_INDEP_WRITE
+
+#ifdef CFIO_DEBUG
+       !    open(unit = 1024, status = 'unknown', access = 'append', file = CFIO_PIO_LOG)
+       !    write(1024,*) __FILE__, __LINE__, "nfmpi_put_vara_all - not defined in CFIO!"
+       !    close(1024)
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_begin_indep_data not&
+             defined" 
+          endif
+#endif
+
+          ierr = nfmpi_begin_indep_data(File%fh)
+
+#ifdef CFIO_DEBUG
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: nfmpi_begin_indep_data over",ierr
+          endif
+#endif
+
+          if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
+
+#ifdef CFIO_DEBUG
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_put_vara_{TYPE} not defined"
+          endif
+#endif
+
+             ierr = nfmpi_put_vara_{TYPE} (File%fh, varid, pstart, &
+                  pcount, ival, clen, {MPITYPE})
+
+#ifdef CFIO_DEBUG
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: nfmpi_put_vara_{TYPE} over",ierr
+          endif
+#endif
+          end if
+
+          if(ierr==PIO_NOERR) then
+
+#ifdef CFIO_DEBUG
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_end_indep_data not defined"
+          endif
+#endif
+             ierr = nfmpi_end_indep_data(File%fh)
+
+#ifdef CFIO_DEBUG
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: nfmpi_end_indep_data over",ierr
+          endif
+#endif
+          end if
+#else
+#ifdef CFIO_DEBUG
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_put_vara_{TYPE} ..."
+          endif
+#endif
+
+          !!! PnetCDF
+          !ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid, pstart, &
+          !     pcount, ival, clen, {MPITYPE})
+          !ierr = cfio_put_vara_{TYPE} (File%fh, varid, ndims, int(pstart), int(pcount), ival)
+
+          !!! CFIO
+          ierr = cfio_put_vara_{TYPE} (File%fh, varid, {DIMS}, int(pstart), int(pcount), ival)
+          !ierr = PIO_NOERR
+
+#ifdef CFIO_DEBUG
+          if (File%iosystem%io_rank == 0) then
+             print *,__FILE__,__LINE__,"[CFIO DEBUG]: cfio_put_vara_{TYPE} over ",ierr
+          endif
+#endif
+
+#endif
+
+#endif
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< zc
+
+#ifdef _NETCDF
+       case(pio_iotype_netcdf4p)
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do writing
+          if (Ios%io_rank == 0) then
+             ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          end if
+#endif
+       case default
+          print *,__PIO_FILE__,__LINE__,iotype
+          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified")
+       end select
+       deallocate(pstart, pcount)
+    end if
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
+
+#ifdef TIMING
+    call t_stopf("pio_put_vara_{DIMS}d_{TYPE}")
+#endif 
+  end function put_vara_{DIMS}d_{TYPE}
+
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_put_var
+!! @brief Writes an netcdf variable to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param start : 
+!! @param count : 
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+  integer function put_vara_vdesc_{DIMS}d_{TYPE} (File,vardesc, start, count, ival) result(ierr)
+    type (File_desc_t), intent(inout) :: File
+    type(var_desc_t), intent(in) :: vardesc
+    integer, intent(in) ::  start(:), count(:)
+    {VTYPE}, intent(in) :: ival{DIMSTR}
+
+    ierr = put_vara_{DIMS}d_{TYPE} (File, vardesc%varid, start, count, ival)
+
+
+  end function put_vara_vdesc_{DIMS}d_{TYPE}
+end module pionfput_mod

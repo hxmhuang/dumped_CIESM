@@ -1,0 +1,264 @@
+control/wrap_mpi.F90:!      mpialltoallv           Calls mpi_alltoallv
+control/wrap_mpi.F90:!      mpialltoallint         Calls mpi_alltoall for integer data
+control/wrap_mpi.F90:   subroutine mpialltoallv (sendbuf, sendcnts, sdispls, sendtype, &
+control/wrap_mpi.F90:   call t_startf ('mpi_alltoallv')
+control/wrap_mpi.F90:   call mpi_alltoallv (sendbuf, sendcnts, sdispls, sendtype, &
+control/wrap_mpi.F90:      write(iulog,*)'mpi_alltoallv failed ier=',ier
+control/wrap_mpi.F90:   call t_stopf ('mpi_alltoallv')
+control/wrap_mpi.F90:   end subroutine mpialltoallv
+control/wrap_mpi.F90:   subroutine mpialltoallint (sendbuf, sendcnt, recvbuf, recvcnt, &
+control/wrap_mpi.F90:   call t_startf ('mpi_alltoallint')
+control/wrap_mpi.F90:   call mpi_alltoall (sendbuf, sendcnt, mpiint, &
+control/wrap_mpi.F90:      write(iulog,*)'mpi_alltoallint failed ier=',ier
+control/wrap_mpi.F90:   call t_stopf ('mpi_alltoallint')
+control/wrap_mpi.F90:   end subroutine mpialltoallint
+dynamics/sld/realloc4.F90:   use spmd_utils, only : iam, npes, altalltoallv
+dynamics/sld/realloc4.F90:      call mpialltoallint(rdispls, 1, pdispls, 1, mpicom)
+dynamics/sld/realloc4.F90:   if (dyn_alltoall .eq. 0) then
+dynamics/sld/realloc4.F90:         call mpialltoallv(buf1, sndcnts_act, sdispls_act, mpir8, &
+dynamics/sld/realloc4.F90:      call altalltoallv(dyn_alltoall, iam, npes,     &
+dynamics/sld/realloc4.F90:   use spmd_utils, only : iam, npes, altalltoallv
+dynamics/sld/realloc4.F90:      call mpialltoallint(rdispls, 1, pdispls, 1, mpicom)
+dynamics/sld/realloc4.F90:   if (dyn_alltoall .eq. 0) then
+dynamics/sld/realloc4.F90:         call mpialltoallv(buf1, sndcnts_act, sdispls_act, mpir8, &
+dynamics/sld/realloc4.F90:      call altalltoallv(dyn_alltoall, iam, npes,       &
+dynamics/sld/scan2.F90:   use spmd_utils, only : iam, npes, altalltoallv
+dynamics/sld/scan2.F90:      call mpialltoallint(rdispls, 1, pdispls, 1, mpicom)
+dynamics/sld/scan2.F90:      call altalltoallv(dyn_allgather, iam, npes, &
+dynamics/sld/realloc7.F90:  use spmd_utils, only : iam, npes, altalltoallv
+dynamics/sld/realloc7.F90:      call mpialltoallint(rdispls, 1, pdispls, 1, mpicom)
+dynamics/sld/realloc7.F90:      call altalltoallv(dyn_allgather, iam, npes, &
+dynamics/eul/spmd_dyn.F90:!  0: use mpi_alltoallv
+dynamics/eul/spmd_dyn.F90:   integer, private, parameter :: min_alltoall = 0
+dynamics/eul/spmd_dyn.F90:   integer, private, parameter :: max_alltoall = 3
+dynamics/eul/spmd_dyn.F90:   integer, private, parameter :: def_alltoall = 0         ! default
+dynamics/eul/spmd_dyn.F90:   integer, public :: dyn_alltoall  = def_alltoall
+dynamics/eul/spmd_dyn.F90:   namelist /spmd_dyn_inparm/ dyn_alltoall, &
+dynamics/eul/spmd_dyn.F90:   call mpibcast (dyn_alltoall   ,1,mpiint,0,mpicom)
+dynamics/eul/spmd_dyn.F90:   if ((dyn_alltoall.lt.min_alltoall).or. &
+dynamics/eul/spmd_dyn.F90:        (dyn_alltoall.gt.max_alltoall)) then
+dynamics/eul/spmd_dyn.F90:           'spmd_readnl:  ERROR:  dyn_alltoall=', &
+dynamics/eul/spmd_dyn.F90:           dyn_alltoall,                              &
+dynamics/eul/spmd_dyn.F90:           min_alltoall,' and ',max_alltoall
+dynamics/eul/spmd_dyn.F90:! Precompute swap partners and number of steps in realloc4 alltoall algorithm.
+dynamics/eul/realloc4.F90:   use spmd_utils, only : iam, npes, altalltoallv
+dynamics/eul/realloc4.F90:      call mpialltoallint(rdispls, 1, pdispls, 1, mpicom)
+dynamics/eul/realloc4.F90:   if (dyn_alltoall .eq. 0) then
+dynamics/eul/realloc4.F90:         call mpialltoallv(buf1, sndcnts_act, sdispls_act, mpir8, &
+dynamics/eul/realloc4.F90:      call altalltoallv(dyn_alltoall, iam, npes,     &
+dynamics/eul/realloc4.F90:   use spmd_utils, only : iam, npes, altalltoallv
+dynamics/eul/realloc4.F90:      call mpialltoallint(rdispls, 1, pdispls, 1, mpicom)
+dynamics/eul/realloc4.F90:   if (dyn_alltoall .eq. 0) then
+dynamics/eul/realloc4.F90:         call mpialltoallv(buf1, sndcnts_act, sdispls_act, mpir8, &
+dynamics/eul/realloc4.F90:      call altalltoallv(dyn_alltoall, iam, npes,       &
+dynamics/eul/scan2.F90:   use spmd_utils, only : iam, npes, altalltoallv
+dynamics/eul/scan2.F90:      call mpialltoallint(rdispls, 1, pdispls, 1, mpicom)
+dynamics/eul/scan2.F90:      call altalltoallv(dyn_allgather, iam, npes, &
+dynamics/eul/realloc7.F90:   use spmd_utils, only : iam, npes, altalltoallv
+dynamics/eul/realloc7.F90:      call mpialltoallint(rdispls, 1, pdispls, 1, mpicom)
+dynamics/eul/realloc7.F90:      call altalltoallv(dyn_allgather, iam, npes, &
+dynamics/se/spmd_dyn.F90:    integer :: dyn_alltoall
+dynamics/se/spmd_dyn.F90:    namelist /spmd_dyn_inparm/ dyn_alltoall, &
+physics/cam/phys_grid.F90:                                       ! block_to_chunk alltoallv, and gathered from each
+physics/cam/phys_grid.F90:                                       ! process in chunk_to_block alltoallv
+physics/cam/phys_grid.F90:                                       ! block_to_chunk alltoallv, and scattered to each
+physics/cam/phys_grid.F90:                                       ! process in chunk_to_block alltoallv
+physics/cam/phys_grid.F90:                                       ! block_to_chunk alltoallv, AND
+physics/cam/phys_grid.F90:                                       ! chunk_to_block alltoallv
+physics/cam/phys_grid.F90:                                       ! block_to_chunk alltoallv, AND
+physics/cam/phys_grid.F90:                                       ! chunk_to_block alltoallv
+physics/cam/phys_grid.F90:!  0: use mpi_alltoallv
+physics/cam/phys_grid.F90:!      is set according to mod_method = phys_alltoall - modmin_alltoall, where
+physics/cam/phys_grid.F90:!      modmin_alltoall is 11.
+physics/cam/phys_grid.F90:   integer, private, parameter :: min_alltoall = -1
+physics/cam/phys_grid.F90:   integer, private, parameter :: max_alltoall = 3
+physics/cam/phys_grid.F90:   integer, private, parameter :: modmin_alltoall = 11
+physics/cam/phys_grid.F90:   integer, private, parameter :: modmax_alltoall = 13
+physics/cam/phys_grid.F90:   integer, private, parameter :: def_alltoall = -1                ! default
+physics/cam/phys_grid.F90:   integer, private :: phys_alltoall = def_alltoall
+physics/cam/phys_grid.F90:       ! implementations of alltoall algorithm.
+physics/cam/phys_grid.F90:            '  phys_alltoall=',phys_alltoall,          &
+physics/cam/phys_grid.F90:                                    phys_alltoall_out, &
+physics/cam/phys_grid.F90:     ! alltoall option
+physics/cam/phys_grid.F90:     integer, intent(out), optional :: phys_alltoall_out
+physics/cam/phys_grid.F90:     if ( present(phys_alltoall_out) ) then
+physics/cam/phys_grid.F90:       phys_alltoall_out = def_alltoall
+physics/cam/phys_grid.F90:                                phys_alltoall_in,    &
+physics/cam/phys_grid.F90:     ! alltoall option
+physics/cam/phys_grid.F90:     integer, intent(in), optional :: phys_alltoall_in
+physics/cam/phys_grid.F90:     if ( present(phys_alltoall_in) ) then
+physics/cam/phys_grid.F90:        phys_alltoall = phys_alltoall_in
+physics/cam/phys_grid.F90:        if (((phys_alltoall .lt. min_alltoall) .or.    &
+physics/cam/phys_grid.F90:             (phys_alltoall .gt. max_alltoall))        &
+physics/cam/phys_grid.F90:            ((phys_alltoall .lt. modmin_alltoall) .or. &
+physics/cam/phys_grid.F90:             (phys_alltoall .gt. modmax_alltoall))     &
+physics/cam/phys_grid.F90:                 'PHYS_GRID_SET_OPTS:  ERROR:  phys_alltoall=',   &
+physics/cam/phys_grid.F90:                  phys_alltoall_in,                               &
+physics/cam/phys_grid.F90:                  min_alltoall,' and ',max_alltoall
+physics/cam/phys_grid.F90:        phys_transpose_mod = phys_alltoall
+physics/cam/phys_grid.F90:   use spmd_utils,    only: altalltoallv
+physics/cam/phys_grid.F90:   integer :: lopt                     ! local copy of phys_alltoall
+physics/cam/phys_grid.F90:! This branch uses mod_comm. Admissable values of phys_alltoall are 
+physics/cam/phys_grid.F90:! phys_alltoall - modmin_alltoall, where modmin_alltoall equals 11.
+physics/cam/phys_grid.F90:      if (phys_alltoall .ge. modmin_alltoall) then
+physics/cam/phys_grid.F90:         mod_method = phys_alltoall - modmin_alltoall
+physics/cam/phys_grid.F90:      call mpialltoallint(rdispls, 1, pdispls, 1, mpicom)
+physics/cam/phys_grid.F90:      if (phys_alltoall .ge. modmin_alltoall) then
+physics/cam/phys_grid.F90:               if (phys_alltoall .gt. modmin_alltoall) then
+physics/cam/phys_grid.F90:               if (phys_alltoall .gt. modmin_alltoall) then
+physics/cam/phys_grid.F90:   if (phys_alltoall < 0) then
+physics/cam/phys_grid.F90:      lopt = phys_alltoall
+physics/cam/phys_grid.F90:         call altalltoallv(lopt, iam, npes,    &
+physics/cam/phys_grid.F90:         call altalltoallv(lopt, iam, npes,    &
+physics/cam/phys_grid.F90:      call mpialltoallv(block_buffer, sndcnts, sdispls, mpir8, &
+physics/cam/phys_grid.F90:   use spmd_utils,    only: altalltoallv
+physics/cam/phys_grid.F90:   integer :: lopt                     ! local copy of phys_alltoall
+physics/cam/phys_grid.F90:! This branch uses mod_comm. Admissable values of phys_alltoall are 
+physics/cam/phys_grid.F90:! phys_alltoall - modmin_alltoall, where modmin_alltoall equals 11.
+physics/cam/phys_grid.F90:      if (phys_alltoall .ge. modmin_alltoall) then
+physics/cam/phys_grid.F90:         mod_method = phys_alltoall - modmin_alltoall
+physics/cam/phys_grid.F90:      call mpialltoallint(rdispls, 1, pdispls, 1, mpicom)
+physics/cam/phys_grid.F90:      if (phys_alltoall .ge. modmin_alltoall) then
+physics/cam/phys_grid.F90:               if (phys_alltoall .gt. modmin_alltoall) then
+physics/cam/phys_grid.F90:               if (phys_alltoall .gt. modmin_alltoall) then
+physics/cam/phys_grid.F90:   if (phys_alltoall < 0) then
+physics/cam/phys_grid.F90:      lopt = phys_alltoall
+physics/cam/phys_grid.F90:         call altalltoallv(lopt, iam, npes,    &
+physics/cam/phys_grid.F90:         call altalltoallv(lopt, iam, npes,    &
+physics/cam/phys_grid.F90:      call mpialltoallv(chunk_buffer, sndcnts, sdispls, mpir8, &
+utils/spmd_utils.F90:   public altalltoallv
+utils/spmd_utils.F90:! Purpose: implementations of MPI_Alltoall using different messaging
+utils/spmd_utils.F90:!  0: use mpi_alltoallv
+utils/spmd_utils.F90:!      altalltoallv
+utils/spmd_utils.F90:   subroutine altalltoallv (option, mytid, nprocs, steps, dests, &
+utils/spmd_utils.F90:! SWAP module MPI-1 commands, MPI_ALLTOALLV or MPI_SENDRECV.
+utils/spmd_utils.F90:   integer, intent(in) :: option               ! 0: mpi_alltoallv
+utils/spmd_utils.F90:!  using MPI library collective MPI_ALLTOALLV
+utils/spmd_utils.F90:      call t_startf ('mpi_alltoallv')
+utils/spmd_utils.F90:      call mpi_alltoallv (sendbuf, sendcnts, sdispls, sendtype, &
+utils/spmd_utils.F90:         write(iulog,*)'altalltoallv (mpi_alltoallv) failed ier=',ier
+utils/spmd_utils.F90:      call t_stopf ('mpi_alltoallv')
+utils/spmd_utils.F90:!  Co-Array Fortran implementation of alltoallv
+utils/spmd_utils.F90:         call t_startf ('caf_alltoallv')
+utils/spmd_utils.F90:            call endrun('altalltoallv (caf_alltoallv) failed: MPI id .ne. CAF id')
+utils/spmd_utils.F90:         call t_stopf ('caf_alltoallv')
+utils/spmd_utils.F90:!  MPI-2 one-sided implementation of alltoallv
+utils/spmd_utils.F90:         call t_startf ('mpi2_alltoallv')
+utils/spmd_utils.F90:            write(iulog,*)'altalltoallv (mpi2_alltoallv) failed ier=',ier
+utils/spmd_utils.F90:         call t_stopf ('mpi2_alltoallv')
+utils/spmd_utils.F90:!  MPI-1 two-sided implementation of alltoallv
+utils/spmd_utils.F90:         call t_startf ('swap_alltoallv')
+utils/spmd_utils.F90:         call t_stopf ('swap_alltoallv')
+utils/spmd_utils.F90:!  MPI_SENDRECV implementation of alltoallv
+utils/spmd_utils.F90:         call t_startf ('mpi1_alltoallv')
+utils/spmd_utils.F90:            write(iulog,*)'altalltoallv (mpi1_alltoallv) failed ier=',ier
+utils/spmd_utils.F90:         call t_stopf ('mpi1_alltoallv')
+utils/spmd_utils.F90:   end subroutine altalltoallv
+utils/pilgrim/parutilitiesmodule.F90:!     MPI\_Alltoall, then the exchange of the actual vectors (can be
+utils/pilgrim/parutilitiesmodule.F90:!     different in size) using MPI\_AlltoallV.  Since the latter is
+utils/pilgrim/parutilitiesmodule.F90:!     MPI_ISEND, MPI_RECV, MPI_WAITALL, MPI_ALLTOALL
+utils/pilgrim/parutilitiesmodule.F90:#if defined( MY_ALLTOALL )
+utils/pilgrim/parutilitiesmodule.F90:      CALL MPI_ALLTOALL( LenInVector, 1, CPP_MPI_INTEGER,                 &
+utils/pilgrim/parutilitiesmodule.F90:!     MPI\_Alltoall, then the exchange of the actual vectors (can be
+utils/pilgrim/parutilitiesmodule.F90:!     different in size) using MPI\_AlltoallV.  Since the latter is
+utils/pilgrim/parutilitiesmodule.F90:!     MPI_ISEND, MPI_RECV, MPI_WAITALL, MPI_ALLTOALL
+utils/pilgrim/parutilitiesmodule.F90:#if defined( MY_ALLTOALL )
+utils/pilgrim/parutilitiesmodule.F90:      CALL MPI_ALLTOALL( LenInVector, 1, CPP_MPI_INTEGER,                 &
+utils/pilgrim/parutilitiesmodule.F90:!     MPI\_Alltoall, then the exchange of the actual vectors (can be
+utils/pilgrim/parutilitiesmodule.F90:!     different in size) using MPI\_AlltoallV.  Since the latter is
+utils/pilgrim/parutilitiesmodule.F90:!     MPI_ISEND, MPI_RECV, MPI_WAITALL, MPI_ALLTOALL
+utils/pilgrim/parutilitiesmodule.F90:#if defined( MY_ALLTOALL )
+utils/pilgrim/parutilitiesmodule.F90:      CALL MPI_ALLTOALL( LenInVector, 1, CPP_MPI_INTEGER,                     &
+utils/pilgrim/parutilitiesmodule.F90:!     MPI\_Alltoall, then the exchange of the actual vectors (can be
+utils/pilgrim/parutilitiesmodule.F90:!     different in size) using MPI\_AlltoallV.  Since the latter is
+utils/pilgrim/parutilitiesmodule.F90:!     MPI_ISEND, MPI_RECV, MPI_WAITALL, MPI_ALLTOALL
+utils/pilgrim/parutilitiesmodule.F90:#if defined( MY_ALLTOALL )
+utils/pilgrim/parutilitiesmodule.F90:      CALL MPI_ALLTOALL( LenInVector, 1, CPP_MPI_INTEGER,                     &
+utils/pilgrim/mod_comm.F90:! !ROUTINE: Ga_AllToAll_r8 --- All to All of an real*8 1d global array
+utils/pilgrim/mod_comm.F90:      subroutine Ga_AllToAll_r8 ( comm, q, Gsize, Lsize, istart )
+utils/pilgrim/mod_comm.F90:      end subroutine Ga_AllToAll_r8
+utils/pilgrim/mod_comm.F90:! !ROUTINE: Ga_AllToAll_r4 --- All to All of an real*4 1d global array
+utils/pilgrim/mod_comm.F90:      subroutine Ga_AllToAll_r4 ( comm, q, Gsize, Lsize, istart )
+utils/pilgrim/mod_comm.F90:        write(iulog,*) 'Mod_comm: Ga_AllToAll_r4 - r4 windows disabled - exiting'
+utils/pilgrim/mod_comm.F90:      end subroutine Ga_AllToAll_r4
+utils/pilgrim/mod_comm.F90:! !ROUTINE: Ga_AllToAll_i4 --- All to All of an integer*4 1d global array
+utils/pilgrim/mod_comm.F90:      subroutine Ga_AllToAll_i4 ( comm, q, Gsize, Lsize, istart )
+utils/pilgrim/mod_comm.F90:      end subroutine Ga_AllToAll_i4
+utils/pilgrim/mod_comm.F90:      logical sw_alltoall
+utils/pilgrim/mod_comm.F90:         sw_alltoall = (sw_local .eq. 2)
+utils/pilgrim/mod_comm.F90:                            sw_alltoall=sw_alltoall, sw_send=send_local)
+utils/pilgrim/mod_comm.F90:                            sw_alltoall=sw_alltoall, sw_send=send_local)
+utils/pilgrim/mod_comm.F90:      logical sw_alltoall
+utils/pilgrim/mod_comm.F90:      logical sw_alltoall
+utils/pilgrim/mod_comm.F90:         sw_alltoall = (sw_local .eq. 2)
+utils/pilgrim/mod_comm.F90:                               sw_alltoall=sw_alltoall, sw_send=send_local)
+utils/pilgrim/mod_comm.F90:                               sw_alltoall=sw_alltoall, sw_send=send_local)
+utils/pilgrim/mod_comm.F90:      logical sw_alltoall
+utils/pilgrim/mod_comm.F90:                               sw_alltoall, sw_send )
+utils/pilgrim/mod_comm.F90:      logical, optional, intent(in) :: sw_alltoall     ! use mpi_alltoall
+utils/pilgrim/mod_comm.F90:!                            throttling, added alltoall option
+utils/pilgrim/mod_comm.F90:      logical :: handshake, alltoall, sendd
+utils/pilgrim/mod_comm.F90:      if ( present(sw_alltoall) ) then
+utils/pilgrim/mod_comm.F90:         alltoall = sw_alltoall
+utils/pilgrim/mod_comm.F90:         alltoall = .false.
+utils/pilgrim/mod_comm.F90:! implementations of alltoall algorithm.
+utils/pilgrim/mod_comm.F90:      if (.not. alltoall) then
+utils/pilgrim/mod_comm.F90:         if (.not. alltoall) then
+utils/pilgrim/mod_comm.F90:         if (.not. alltoall) then
+utils/pilgrim/mod_comm.F90:      if (alltoall) then
+utils/pilgrim/mod_comm.F90:         call mpi_alltoallv (ga_r8_s, sndlths, sdispls, mp_r8, &
+utils/pilgrim/mod_comm.F90:         if (.not. alltoall) then
+utils/pilgrim/mod_comm.F90:      if (.not. alltoall .and. .not. sendd) then
+utils/pilgrim/mod_comm.F90:                                 sw_alltoall, sw_send )
+utils/pilgrim/mod_comm.F90:      logical, optional, intent(in) :: sw_alltoall     ! use mpi_alltoall
+utils/pilgrim/mod_comm.F90:!                            throttling, added alltoall option
+utils/pilgrim/mod_comm.F90:      logical :: handshake, alltoall, sendd
+utils/pilgrim/mod_comm.F90:      if ( present(sw_alltoall) ) then
+utils/pilgrim/mod_comm.F90:         alltoall = sw_alltoall
+utils/pilgrim/mod_comm.F90:         alltoall = .false.
+utils/pilgrim/mod_comm.F90:! implementations of alltoall algorithm.
+utils/pilgrim/mod_comm.F90:      if (.not. alltoall) then
+utils/pilgrim/mod_comm.F90:         if (.not. alltoall) then
+utils/pilgrim/mod_comm.F90:         if (.not. alltoall) then
+utils/pilgrim/mod_comm.F90:      if (alltoall) then
+utils/pilgrim/mod_comm.F90:         call mpi_alltoallv (ga_i4_s, sndlths, sdispls, mp_i4, &
+utils/pilgrim/mod_comm.F90:         if (.not. alltoall) then
+utils/pilgrim/mod_comm.F90:      if (.not. alltoall .and. .not. sendd) then
+utils/pilgrim/mod_comm.F90:      logical sw_alltoall
+utils/pilgrim/mod_comm.F90:         sw_alltoall = (sw_local .eq. 2)
+utils/pilgrim/mod_comm.F90:                           sw_alltoall=sw_alltoall, sw_send=send_local)
+utils/pilgrim/mod_comm.F90:      logical sw_alltoall
+utils/pilgrim/mod_comm.F90:                                sw_handshake, sw_maxreq, sw_alltoall, sw_send   )
+utils/pilgrim/mod_comm.F90:      logical, optional, intent(in) :: sw_alltoall     ! use mpi_alltoall
+utils/pilgrim/mod_comm.F90:!                            throttling, added alltoall option
+utils/pilgrim/mod_comm.F90:      logical :: handshake, alltoall, sendd
+utils/pilgrim/mod_comm.F90:      if ( present(sw_alltoall) ) then
+utils/pilgrim/mod_comm.F90:         alltoall = sw_alltoall
+utils/pilgrim/mod_comm.F90:         alltoall = .false.
+utils/pilgrim/mod_comm.F90:! implementations of alltoall algorithm.
+utils/pilgrim/mod_comm.F90:      if (.not. alltoall) then
+utils/pilgrim/mod_comm.F90:         if (.not. alltoall) then
+utils/pilgrim/mod_comm.F90:         if (.not. alltoall) then
+utils/pilgrim/mod_comm.F90:      if (alltoall) then
+utils/pilgrim/mod_comm.F90:         call mpi_alltoallv (ga_r8_s, sndlths, sdispls, mp_r8, &
+utils/pilgrim/mod_comm.F90:         if (.not. alltoall) then
+utils/pilgrim/mod_comm.F90:      if (.not. alltoall .and. .not. sendd) then
+utils/pilgrim/mod_comm.F90:      logical sw_alltoall
+utils/pilgrim/mod_comm.F90:         sw_alltoall = (sw_local .eq. 2)
+utils/pilgrim/mod_comm.F90:                           sw_alltoall=sw_alltoall, sw_send=send_local)
+utils/pilgrim/mod_comm.F90:      logical sw_alltoall
+utils/pilgrim/mod_comm.F90:                                sw_handshake, sw_maxreq, sw_alltoall, sw_send   )
+utils/pilgrim/mod_comm.F90:      logical, optional, intent(in) :: sw_alltoall     ! use mpi_alltoall
+utils/pilgrim/mod_comm.F90:!                            throttling, added alltoall option
+utils/pilgrim/mod_comm.F90:      logical :: handshake, alltoall, sendd
+utils/pilgrim/mod_comm.F90:      if ( present(sw_alltoall) ) then
+utils/pilgrim/mod_comm.F90:         alltoall = sw_alltoall
+utils/pilgrim/mod_comm.F90:         alltoall = .false.
+utils/pilgrim/mod_comm.F90:! implementations of alltoall algorithm.
+utils/pilgrim/mod_comm.F90:      if (.not. alltoall) then
+utils/pilgrim/mod_comm.F90:         if (.not. alltoall) then
+utils/pilgrim/mod_comm.F90:         if (.not. alltoall) then
+utils/pilgrim/mod_comm.F90:      if (alltoall) then
+utils/pilgrim/mod_comm.F90:         call mpi_alltoallv (ga_r8_s, sndlths, sdispls, mp_r8, &
+utils/pilgrim/mod_comm.F90:         if (.not. alltoall) then
+utils/pilgrim/mod_comm.F90:      if (.not. alltoall .and. .not. sendd) then

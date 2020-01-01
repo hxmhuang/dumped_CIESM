@@ -1,0 +1,95 @@
+#!/bin/csh -f
+
+#################################################################################
+if ($PHASE == set_batch) then
+#################################################################################
+
+source ./Tools/ccsm_getenv || exit -1
+
+set ntasks  = `${CASEROOT}/Tools/taskmaker.pl -sumonly`
+set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+@ nodes = $ntasks / ${MAX_TASKS_PER_NODE}
+if ( $ntasks % ${MAX_TASKS_PER_NODE} > 0) then
+  @ nodes = $nodes + 1
+  @ ntasks = $nodes * ${MAX_TASKS_PER_NODE}
+endif
+@ taskpernode = ${MAX_TASKS_PER_NODE} / ${maxthrds}
+set qname = q_sw_yyz
+set tlimit = "72:00:00"
+if ($CCSM_ESTCOST > 2) set tlimit = "72:00:00"
+
+if ($?TESTMODE) then
+ set file = $CASEROOT/${CASE}.test 
+else
+ set file = $CASEROOT/${CASE}.run 
+endif
+
+cat >! $file << EOF1
+#!/bin/csh -f
+#SBATCH --job-name=${CASE}
+#SBATCH --time=$tlimit
+#SBATCH --nodes=$nodes
+##SBATCH --ntasks=$ntasks
+#SBATCH --cpus-per-task=$maxthrds
+#SBATCH --exclusive
+###SBATCH --mail-type=END
+###SBATCH --mail-user=xyz@abc.com
+#SBATCH --output=slurm.out
+
+EOF1
+
+#################################################################################
+else if ($PHASE == set_exe) then
+#################################################################################
+
+set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`
+set maxtasks = `${CASEROOT}/Tools/taskmaker.pl -sumtasks`
+
+cat >> ${CASEROOT}/${CASE}.run << EOF1
+# -------------------------------------------------------------------------
+# # Run the model
+# # -------------------------------------------------------------------------
+#
+# sleep 25
+# cd \$RUNDIR
+# echo "\`date\` -- CSM EXECUTION BEGINS HERE" 
+#
+# setenv OMP_NUM_THREADS ${maxthrds}
+# # for mvapich
+# #srun --ntasks=${maxtasks} --cpu_bind=sockets --cpu_bind=verbose --kill-on-bad-exit \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+# # for mvapich2
+#
+#srun -p \$JOBQUEUE --mpi=mvapich --ntasks=${maxtasks} --cpu_bind=sockets --cpu_bind=verbose --kill-on-bad-exit \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+
+#bsub -I -p -q  \$JOBQUEUE -n ${maxtasks} -np 4 -cgsp 1 -host_stack 512 -share_size 4096 \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+cd ./run
+cp $EXEROOT/cesm.exe $RUNDIR/cesm.exe
+./run.sh
+# #srun --ntasks=${maxtasks} --cpu_bind=sockets --cpu_bind=verbose --kill-on-bad-exit \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+#bsub -b -I -m 1 -p -q q_sw_zhengji -host_stack 1024 -share_size 6500 -n ${maxtasks} -o cesm.log.\$LID -cgsp 1 \$EXEROOT/cesm.exe 
+
+
+wait
+echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
+
+EOF1
+
+
+#################################################################################
+else if ($PHASE == set_larch) then
+#################################################################################
+
+   #This is a place holder for a long-term archiving script
+
+#################################################################################
+else
+#################################################################################
+
+    echo "  PHASE setting of $PHASE is not an accepted value"
+    echo "  accepted values are set_batch, set_exe and set_larch"
+    exit 1
+
+#################################################################################
+endif
+#################################################################################
+
